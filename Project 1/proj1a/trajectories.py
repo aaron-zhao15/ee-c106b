@@ -20,6 +20,7 @@ class Trajectory:
         	desired duration of the trajectory in seconds 
         """
         self.total_time = total_time
+        self.pose = np.array([0, 1, 0, 0])
 
     def target_pose(self, time):
         """
@@ -143,7 +144,7 @@ class Trajectory:
 
 class LinearTrajectory(Trajectory):
 
-    def __init__(self):
+    def __init__(self, total_time, start_point, goal_point):
         """
         Remember to call the constructor of Trajectory
 
@@ -151,8 +152,10 @@ class LinearTrajectory(Trajectory):
         ----------
         ????? You're going to have to fill these in how you see fit
         """
-        pass
-        # Trajectory.__init__(self, ...)
+        total_time = 100
+        Trajectory.__init__(self, total_time)
+        self.start_point = start_point
+        self.goal_point = goal_point
 
     def target_pose(self, time):
         """
@@ -174,7 +177,9 @@ class LinearTrajectory(Trajectory):
         7x' :obj:`numpy.ndarray`
             desired configuration in workspace coordinates of the end effector
         """
-        pass
+        position = np.array((time/self.total_time)*(self.start_point))
+        vector = np.hstack((position, self.pose))
+        return vector
 
     def target_velocity(self, time):
         """
@@ -191,7 +196,10 @@ class LinearTrajectory(Trajectory):
         6x' :obj:`numpy.ndarray`
             desired body-frame velocity of the end effector
         """
-        pass
+        dist = np.linalg.norm(self.goal_point - self.start_point)
+        a = -dist/(total_time**3)*(1/2-1/3)
+
+        
 
 class CircularTrajectory(Trajectory):
 
