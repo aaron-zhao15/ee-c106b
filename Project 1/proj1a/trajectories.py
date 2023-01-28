@@ -177,9 +177,10 @@ class LinearTrajectory(Trajectory):
         7x' :obj:`numpy.ndarray`
             desired configuration in workspace coordinates of the end effector
         """
-        position = np.array((time/self.total_time)*(self.start_point))
-        vector = np.hstack((position, self.pose))
-        return vector
+        x = self.goal_point - self.start_point
+        position = np.array(x * time/self.total_time)
+        pose = np.hstack((position, self.pose))
+        return pose
 
     def target_velocity(self, time):
         """
@@ -197,9 +198,9 @@ class LinearTrajectory(Trajectory):
             desired body-frame velocity of the end effector
         """
         dist = np.linalg.norm(self.goal_point - self.start_point)
-        a = -dist/(total_time**3)*(1/2-1/3)
-
-        
+        a = 6 * dist/(self.total_time**3)
+        vt = -a*time**2 + a*time*dist
+        return vt
 
 class CircularTrajectory(Trajectory):
 
@@ -211,8 +212,11 @@ class CircularTrajectory(Trajectory):
         ----------
         ????? You're going to have to fill these in how you see fit
         """
-        pass
-        # Trajectory.__init__(self, ...)
+        Trajectory.__init__(self, total_time)
+        self.center_position = center_position
+        self.radius = radius
+        self.total_time = total_time
+        self.z = 0
 
     def target_pose(self, time):
         """
@@ -234,7 +238,12 @@ class CircularTrajectory(Trajectory):
         7x' :obj:`numpy.ndarray`
             desired configuration in workspace coordinates of the end effector
         """
-        pass
+        theta = 360 * time/self.total_time
+        x = self.radius * np.cos(theta)
+        y = self.radius * np.sin(theta)
+        position = np.array(x, y, self.z)
+        pose = np.hstack((position, self.pose))
+        return pose
 
     def target_velocity(self, time):
         """
@@ -251,7 +260,10 @@ class CircularTrajectory(Trajectory):
         6x' :obj:`numpy.ndarray`
             desired body-frame velocity of the end effector
         """
-        pass
+        dist = 2 * np.pi * self.radius
+        a = 6 * dist/(self.total_time**3)
+        vt = -a*time**2 + a*time*dist
+        return vt
 
 class PolygonalTrajectory(Trajectory):
     def __init__(self, points, total_time):
@@ -264,8 +276,7 @@ class PolygonalTrajectory(Trajectory):
         ????? You're going to have to fill these in how you see fit
 
         """
-        pass
-        # Trajectory.__init__(self, total_time)
+        Trajectory.__init__(self, total_time)
 
     def target_pose(self, time):
         """
