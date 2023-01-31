@@ -241,13 +241,21 @@ class SimpleArmSim(pyglet.window.Window):
 
 def define_trajectories(args):
     """ Define each type of trajectory with the appropriate parameters."""
+    # trajectory = None
+    # if args.task == 'line':
+    #     trajectory = LinearTrajectory()
+    # elif args.task == 'circle':
+    #     trajectory = CircularTrajectory()
+    # elif args.task == 'polygon':
+    #     trajectory = PolygonalTrajectory()
+    # return trajectory
     trajectory = None
     if args.task == 'line':
-        trajectory = LinearTrajectory()
+        trajectory = LinearTrajectory(4, np.array([2, 2, 1]), np.array([2, 8, 1]))
     elif args.task == 'circle':
-        trajectory = CircularTrajectory()
+        trajectory = CircularTrajectory(np.array([1, 2, 1]), 5, 10)
     elif args.task == 'polygon':
-        trajectory = PolygonalTrajectory()
+        trajectory = PolygonalTrajectory([np.array([2, 2, 0]), np.array([3, 4, 0]), np.array([5, 2, 0]), np.array([2, 2, 0])], 9)
     return trajectory
 
 if __name__ == "__main__":

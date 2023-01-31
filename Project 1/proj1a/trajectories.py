@@ -180,7 +180,8 @@ class LinearTrajectory(Trajectory):
         dist = np.linalg.norm(vec)
         unit_vec = (vec)/dist
         a = 6 * dist/(self.total_time**3)
-        x = -a*((time**3)/3 - self.total_time*(time**2)/2)
+        x = -a*((time**3)/3) + a*self.total_time*((time**2)/2)
+        # print(time, x)
         position = self.start_point + x*unit_vec
         pose = np.hstack((position, self.orientation))
         return pose
@@ -202,7 +203,8 @@ class LinearTrajectory(Trajectory):
         """
         dist = np.linalg.norm(self.goal_point - self.start_point)
         a = 6 * dist/(self.total_time**3)
-        vt = -a*time**2 + a*time*dist
+        vt = -a * time * (time - self.total_time)
+        print(time, vt)
         unit_vec = (self.goal_point - self.start_point)/dist
         v = vt*unit_vec
         twist = np.hstack((v, np.zeros(3)))

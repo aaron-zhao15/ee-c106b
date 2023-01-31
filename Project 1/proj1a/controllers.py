@@ -64,6 +64,7 @@ class JointVelocityController(Controller):
         ----------
         desired control input (joint velocities or torques) : (2,) numpy array
         """
+
         return target_velocity
 
 class WorkspaceVelocityController(Controller):
@@ -88,7 +89,11 @@ class WorkspaceVelocityController(Controller):
         ----------
         desired control input (joint velocities or torques) : (2,) numpy array
         """
-        pass
+        jacobian = self.sim.J_body_func(self.sim.q, self.sim.q_dot)
+        jacobian_pinv = np.linalg.pinv(jacobian)
+        theta_dot = jacobian_pinv@target_velocity
+        # print(theta_dot)
+        return theta_dot
 
 
 class JointTorqueController(Controller):
@@ -118,4 +123,10 @@ class JointTorqueController(Controller):
         ----------
         desired control input (joint velocities or torques) : (2,) numpy array
         """
-        pass
+        M = self.sim.M_func(self.sim.q, self.sim.q_dot)
+        C = self.sim.C_func(self.sim.q, self.sim.q_dot)
+        G = self.sim.G_func(self.sim.q, self.sim.q_dot)
+        t_a = target_acceleration.reshape((2, 1))
+        q_d = self.sim.q_dot.reshape((2, 1))
+        tau = M@t_a + C@q_d + G
+        return tau
