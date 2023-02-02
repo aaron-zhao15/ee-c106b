@@ -204,7 +204,6 @@ class LinearTrajectory(Trajectory):
         dist = np.linalg.norm(self.goal_point - self.start_point)
         a = 6 * dist/(self.total_time**3)
         vt = -a * time * (time - self.total_time)
-        print(time, vt)
         unit_vec = (self.goal_point - self.start_point)/dist
         v = vt*unit_vec
         twist = np.hstack((v, np.zeros(3)))
