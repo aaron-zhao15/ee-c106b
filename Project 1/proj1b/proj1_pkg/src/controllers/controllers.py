@@ -469,8 +469,11 @@ class WorkspaceVelocityController(Controller):
         target_velocity: (6,) ndarray of desired body-frame se(3) velocity (vx, vy, vz, wx, wy, wz).
         target_acceleration: ndarray of desired accelerations (should you need this?).
         """
-        raise NotImplementedError
-        control_input = None        
+        configuration = self._kin.forward_position_kinematics()
+        jacobian = self.sim.J_body_func(self.sim.q, self.sim.q_dot)
+        jacobian_pinv = np.linalg.pinv(jacobian)
+        theta_dot = jacobian_pinv@target_velocity
+        control_input = theta_dot        
         self._limb.set_joint_velocities(joint_array_to_dict(control_input, self._limb))
 
 
@@ -553,6 +556,14 @@ class PDJointTorqueController(Controller):
         target_velocity: 7x' :obj:`numpy.ndarray` of desired velocities
         target_acceleration: 7x' :obj:`numpy.ndarray` of desired accelerations
         """
-        raise NotImplementedError
-        control_input = None
+        positions_dict = joint_array_to_dict(get_joint_positions())
+        velocity_dict = joint_array_to_dict(get_joint_velocities())
+
+        M = self._kin.inertia(positions_dict)
+        C = self._kin.coriolis(positions_dict, velocity_dict)
+        G = self._kin.gravity(positions_dict)
+        t_a = target_acceleration.reshape((2, 1))
+        q_d = self.sim.q_dot.reshape((2, 1))
+        tau = M@t_a + C@q_d + 0.01*G
+        control_input = tau
         self._limb.set_joint_torques(joint_array_to_dict(control_input, self._limb))
