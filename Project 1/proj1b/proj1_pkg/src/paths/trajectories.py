@@ -352,12 +352,23 @@ class PolygonalTrajectory(Trajectory):
 def define_trajectories(args):
     """ Define each type of trajectory with the appropriate parameters."""
     trajectory = None
+
+    tfBuffer = tf2_ros.Buffer()
+    listener = tf2_ros.TransformListener(tfBuffer)
+
+    bot_trans = tfBuffer.lookup_transform('base', 'right_hand_gripper')
+    bot_pos = np.array([bot_trans.transform.x, bot_trans.transform.y, bot_trans.transform.z])
+
+
+    ar_trans = tfBuffer.lookup_transform('base', 'ar_marker_9')
+    ar_pos = np.array([ar_trans.transform.x, ar_trans.transform.y, ar_trans.transform.z])
+
     if args.task == 'line':
-        trajectory = LinearTrajectory()
+        trajectory = LinearTrajectory(2, bot_pos, ar_pos)
     elif args.task == 'circle':
-        trajectory = CircularTrajectory()
+        trajectory = CircularTrajectory(ar_pos, 0.1, 5)
     elif args.task == 'polygon':
-        trajectory = PolygonalTrajectory()
+        trajectory = PolygonalTrajectory() # fill with locations of multiple ar tags
     return trajectory
 
 if __name__ == '__main__':

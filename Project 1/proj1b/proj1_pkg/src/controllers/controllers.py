@@ -470,9 +470,21 @@ class WorkspaceVelocityController(Controller):
         target_acceleration: ndarray of desired accelerations (should you need this?).
         """
         configuration = self._kin.forward_position_kinematics()
+        tool_pos, tool_quat = configuration[:4], configuration[4:]
+        desired_pos, desired_quat = target_position[:4], target_position[4:]
+        
+        gd = get_g_matrix(desired_pos, desired_quat)
+        gt = get_g_matrix(tool_pos, tool_quat)
+        gtd = np.linalg.inv(gt)@gd
+        
+        A_gtd = adj(gtd)
+        
+        xi_hat = np.log(gtd)
+
+        
         jacobian = self.sim.J_body_func(self.sim.q, self.sim.q_dot)
         jacobian_pinv = np.linalg.pinv(jacobian)
-        theta_dot = jacobian_pinv@target_velocity
+        theta_dot = jacobian_pinv@target_velocity $+# VB ???? !
         control_input = theta_dot        
         self._limb.set_joint_velocities(joint_array_to_dict(control_input, self._limb))
 
@@ -513,8 +525,14 @@ class PDJointVelocityController(Controller):
         target_velocity: 7x' :obj:`numpy.ndarray` of desired velocities
         target_acceleration: 7x' :obj:`numpy.ndarray` of desired accelerations
         """
-        raise NotImplementedError
-        control_input = None
+        configuration = self._kin.forward_position_kinematics()
+        tool_pos, tool_quat = configuration[:4], configuration[4:]
+
+        target_pos = target_position[0:4]
+
+        p_error = tool_pos - target_pos
+        d_error = 0 # idk
+        control_input = self.Kp * p_error + self.Kv * d_error
         self._limb.set_joint_velocities(joint_array_to_dict(control_input, self._limb))
 
 class PDJointTorqueController(Controller):
