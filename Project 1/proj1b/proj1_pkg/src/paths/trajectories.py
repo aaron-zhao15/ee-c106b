@@ -5,6 +5,10 @@ import matplotlib.pyplot as plt
 import matplotlib.animation as animation
 import argparse
 
+import rospy
+import tf
+import tf2_ros
+
 """
 Set of classes for defining SE(3) trajectories for the end effector of a robot 
 manipulator
@@ -148,7 +152,7 @@ class LinearTrajectory(Trajectory):
         ----------
         ????? You're going to have to fill these in how you see fit
         """
-        Trajectory.__init__(self, ...)
+        Trajectory.__init__(self, total_time)
         self.start_point = start_point
         self.goal_point = goal_point
 
@@ -178,6 +182,7 @@ class LinearTrajectory(Trajectory):
         x = -a*((time**3)/3) + a*self.total_time*((time**2)/2)
         # print(time, x)
         position = self.start_point + x*unit_vec
+        position = np.reshape(position, (3,))
         pose = np.hstack((position, self.orientation))
         return pose
 
@@ -352,16 +357,6 @@ class PolygonalTrajectory(Trajectory):
 def define_trajectories(args):
     """ Define each type of trajectory with the appropriate parameters."""
     trajectory = None
-
-    tfBuffer = tf2_ros.Buffer()
-    listener = tf2_ros.TransformListener(tfBuffer)
-
-    bot_trans = tfBuffer.lookup_transform('base', 'right_hand_gripper')
-    bot_pos = np.array([bot_trans.transform.x, bot_trans.transform.y, bot_trans.transform.z])
-
-
-    ar_trans = tfBuffer.lookup_transform('base', 'ar_marker_9')
-    ar_pos = np.array([ar_trans.transform.x, ar_trans.transform.y, ar_trans.transform.z])
 
     if args.task == 'line':
         trajectory = LinearTrajectory(2, bot_pos, ar_pos)

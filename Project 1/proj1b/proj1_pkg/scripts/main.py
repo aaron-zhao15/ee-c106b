@@ -85,18 +85,21 @@ def get_trajectory(limb, kin, ik_solver, tag_pos, args):
     tfBuffer = tf2_ros.Buffer()
     listener = tf2_ros.TransformListener(tfBuffer)
 
+    trans = None
+
     try:
-        trans = tfBuffer.lookup_transform('base', 'right_hand_gripper', rospy.Time(0), rospy.Duration(10.0))
+        trans = tfBuffer.lookup_transform('base', 'right_hand', rospy.Time(0), rospy.Duration(10.0))
     except Exception as e:
         print(e)
 
     current_position = np.array([getattr(trans.transform.translation, dim) for dim in ('x', 'y', 'z')])
     print("Current Position:", current_position)
+    print("Tag Position:", tag_pos)
 
     if task == 'line':
-        trajectory = LinearTrajectory()
+        trajectory = LinearTrajectory(2, current_position, tag_pos)
     elif task == 'circle':
-        trajectory = CircularTrajectory()
+        trajectory = CircularTrajectory(tag_pos, 0.1, 5)
     elif task == 'polygon':
         trajectory = PolygonalTrajectory()
     else:
@@ -153,8 +156,8 @@ def main():
     parser.add_argument('-task', '-t', type=str, default='line', help=
         'Options: line, circle, polygon.  Default: line'
     )
-    parser.add_argument('-ar_marker', '-ar', nargs='+', help=
-        'Which AR marker to use.  Default: 1'
+    parser.add_argument('-ar_marker', '-ar', nargs='+', default='9', help=
+        'Which AR marker to use.  Default: 9'
     )
     parser.add_argument('-controller_name', '-c', type=str, default='moveit', 
         help='Options: moveit, open_loop, jointspace, workspace, or torque.  Default: moveit'

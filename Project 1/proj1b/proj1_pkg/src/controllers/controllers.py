@@ -10,7 +10,7 @@ import sys
 import numpy as np
 import itertools
 import matplotlib
-matplotlib.use('TkAgg')
+# matplotlib.use('TkAgg')
 import matplotlib.pyplot as plt
 
 # Lab imports
@@ -484,7 +484,7 @@ class WorkspaceVelocityController(Controller):
         
         jacobian = self.sim.J_body_func(self.sim.q, self.sim.q_dot)
         jacobian_pinv = np.linalg.pinv(jacobian)
-        theta_dot = jacobian_pinv@target_velocity $+# VB ???? !
+        theta_dot = jacobian_pinv@target_velocity # VB ???? !
         control_input = theta_dot        
         self._limb.set_joint_velocities(joint_array_to_dict(control_input, self._limb))
 
