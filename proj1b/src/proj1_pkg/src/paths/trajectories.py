@@ -24,7 +24,6 @@ class Trajectory:
             desired duration of the trajectory in seconds 
         """
         self.total_time = total_time
-        self.orientation = np.array([0, 1, 0, 0])
 
     def target_pose(self, time):
         """
@@ -175,7 +174,7 @@ class LinearTrajectory(Trajectory):
         7x' :obj:`numpy.ndarray`
             desired configuration in workspace coordinates of the end effector
         """
-        pose = None
+        pose = np.hstack((self.goal_point, np.array([0, 1, 0, 0])))
         if time < self.total_time:
             vec = self.goal_point - self.start_point
             dist = np.linalg.norm(vec)
@@ -184,9 +183,7 @@ class LinearTrajectory(Trajectory):
             x = -a*((time**3)/3) + a*self.total_time*((time**2)/2)
             position = self.start_point + x*unit_vec
             position = np.reshape(position, (3,))
-            pose = np.hstack((position, self.orientation))
-        else:
-            pose = np.hstack((self.goal_point, self.orientation))
+            pose = np.hstack((position, np.array([0, 1, 0, 0])))
         return pose
 
     def target_velocity(self, time):
@@ -204,7 +201,7 @@ class LinearTrajectory(Trajectory):
         6x' :obj:`numpy.ndarray`
             desired body-frame velocity of the end effector
         """
-        twist = None
+        twist = np.zeros(6)
         if time < self.total_time:
             dist = np.linalg.norm(self.goal_point - self.start_point)
             a = 6 * dist/(self.total_time**3)
@@ -213,8 +210,6 @@ class LinearTrajectory(Trajectory):
             v = vt*unit_vec
             v = v.reshape((3,))
             twist = np.hstack((v, np.zeros(3)))
-        else:
-            twist = np.zeros(6)
         return twist
         
 
@@ -234,8 +229,8 @@ class CircularTrajectory(Trajectory):
         self.reach_time = reach_time
         self.z = self.center_position[2]
 
-        circle_start = np.array([self.center_position[0] + self.radius, self.center_position[1], self.z])
-        self.reach_trajectory = LinearTrajectory(start_point, circle_start, reach_time)
+        self.circle_start = np.array([self.center_position[0] + self.radius, self.center_position[1], self.z])
+        self.reach_trajectory = LinearTrajectory(start_point, self.circle_start, reach_time)
 
     def target_pose(self, time):
         """
@@ -255,7 +250,7 @@ class CircularTrajectory(Trajectory):
         7x' :obj:`numpy.ndarray`
             desired configuration in workspace coordinates of the end effector
         """
-        pose = None
+        pose = np.hstack((self.circle_start, np.array([0, 1, 0, 0])))
         if time < self.reach_time:
             pose = self.reach_trajectory.target_pose(time)
         elif time < self.total_time:
@@ -269,9 +264,7 @@ class CircularTrajectory(Trajectory):
             y = self.center_position[1] + self.radius * np.sin(theta)
 
             position = np.array([x, y, self.z])
-            pose = np.hstack((position, self.orientation))
-        else:
-            pose = np.hstack((self.goal_point, self.orientation))
+            pose = np.hstack((position, np.array([0, 1, 0, 0])))
         return pose
 
     def target_velocity(self, time):
@@ -289,7 +282,7 @@ class CircularTrajectory(Trajectory):
         6x' :obj:`numpy.ndarray`
             desired body-frame velocity of the end effector
         """
-        twist = None
+        twist = np.zeros(6)
         if time < self.reach_time:
             twist = self.reach_trajectory.target_velocity(time)
         elif time < self.total_time:
@@ -303,9 +296,7 @@ class CircularTrajectory(Trajectory):
             theta = -a*((time**3)/3 - self.circle_time*(time**2)/2)
             x_dot = -self.radius*theta_dot*np.sin(theta)
             y_dot = self.radius*theta_dot*np.cos(theta)
-            twist = np.array([x_dot, y_dot, 0, 0, 0, theta_dot])
-        else:
-            twist = np.zeros(6)
+            twist = np.array([x_dot, y_dot, 0, 0, 0, 0])
         return twist
 
 class PolygonalTrajectory(Trajectory):
@@ -320,7 +311,6 @@ class PolygonalTrajectory(Trajectory):
         Trajectory.__init__(self, total_time)
         num_points = len(points)
         self.time_segments = np.linspace(0, total_time, num_points)
-        print(self.time_segments)
         self.trajectories = [None] * (len(self.time_segments)-1)
         for i in range(1, len(self.time_segments)):
             segment_time = self.time_segments[i] - self.time_segments[i-1]
@@ -346,14 +336,13 @@ class PolygonalTrajectory(Trajectory):
         7x' :obj:`numpy.ndarray`
             desired configuration in workspace coordinates of the end effector
         """
-        seg_idx = -1
-        seg_t = -1
-        for i in range(len(self.time_segments)):
-            if time < self.time_segments[i]:
-                seg_idx = i-1
-                seg_t = time - self.time_segments[i-1]
+        seg_idx = 0
+        seg_t = time
+        for i in range(len(self.time_segments)-1):
+            if time <= self.time_segments[i+1]:
+                seg_idx = i
+                seg_t = time - self.time_segments[i]
                 break
-        # print(seg_idx)
         pose = self.trajectories[seg_idx].target_pose(seg_t)
         return pose
         
@@ -372,28 +361,15 @@ class PolygonalTrajectory(Trajectory):
         6x' :obj:`numpy.ndarray`
             desired body-frame velocity of the end effector
         """
-        seg_idx = -1
-        seg_t = -1
-        for i in range(len(self.time_segments)):
-            if time < self.time_segments[i]:
-                seg_idx = i-1
-                seg_t = time - self.time_segments[i-1]
+        seg_idx = 0
+        seg_t = time
+        for i in range(len(self.time_segments)-1):
+            if time <= self.time_segments[i+1]:
+                seg_idx = i
+                seg_t = time - self.time_segments[i]
                 break
-
         twist = self.trajectories[seg_idx].target_velocity(seg_t)
         return twist
-
-def define_trajectories(args):
-    """ Define each type of trajectory with the appropriate parameters."""
-    trajectory = None
-
-    if args.task == 'line':
-        trajectory = LinearTrajectory(bot_pos, ar_pos, 2)
-    elif args.task == 'circle':
-        trajectory = CircularTrajectory(ar_pos, 0.1, 5)
-    elif args.task == 'polygon':
-        trajectory = PolygonalTrajectory() # fill with locations of multiple ar tags
-    return trajectory
 
 if __name__ == '__main__':
     """

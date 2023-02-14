@@ -468,15 +468,13 @@ class WorkspaceVelocityController(Controller):
         target_acceleration: ndarray of desired accelerations (should you need this?).
         """
 
-        current_position = get_joint_positions(self._limb)
-
         configuration = self._kin.forward_position_kinematics()
         tool_pos, tool_quat = configuration[:3], configuration[3:]
 
         desired_pos, desired_quat = target_position[:3], target_position[3:]
-        target_pos, target_quat = target_velocity[:3], target_velocity[3:]
+        target_v, target_omega = target_velocity[:3], target_velocity[3:]
 
-        gd = get_g_matrix(target_pos, target_quat)
+        gd = get_g_matrix(desired_pos, desired_quat)
         gt = get_g_matrix(tool_pos, tool_quat)
         
         gtd = np.linalg.inv(gt)@gd
@@ -490,9 +488,8 @@ class WorkspaceVelocityController(Controller):
 
         xi_s = Ad_gt@xi
 
-        U_s = self.Kp@xi_s + self.Kv@target_velocity
+        U_s = self.Kp@xi_s + target_velocity
         
-        # jacobian = self.sim.J_body_func(self.sim.q, self.sim.q_dot)
         jacobian_pinv = self._kin.jacobian_pseudo_inverse()
         theta_dot = jacobian_pinv@U_s # VB 
         control_input = theta_dot.T
@@ -602,5 +599,4 @@ class PDJointTorqueController(Controller):
 
         control_input = tau.T + self.Kp @ position_err + self.Kv @ velocity_err
         control_input = control_input.T
-        print(control_input)
         self._limb.set_joint_torques(joint_array_to_dict(control_input, self._limb))

@@ -110,7 +110,7 @@ def get_trajectory(limb, kin, ik_solver, tag_pos, args):
     elif task == 'circle':
         trajectory = CircularTrajectory(current_position, tag_pos_adjusted_z, 0.1, 10, 3)
     elif task == 'polygon':
-        trajectory = PolygonalTrajectory(polygon_points, 15)
+        trajectory = PolygonalTrajectory(polygon_points, 10)
     else:
         raise ValueError('task {} not recognized'.format(task))
     path = MotionPath(limb, kin, ik_solver, trajectory)
@@ -130,18 +130,18 @@ def get_controller(controller_name, limb, kin):
     """
     if controller_name == 'workspace':
         # YOUR CODE HERE
-        Kp = np.array([0.1, 0.1, 0.1, 0.1, 0.1, 0.1])
-        Kv = np.array([0.1, 0.1, 0.1, 0.1, 0.1, 0.1])
+        Kp = np.array([0.01, 0.01, 0.01, 0.01, 0.01, 0.01])
+        Kv = np.array([0, 0, 0, 0, 0, 0])
         controller = WorkspaceVelocityController(limb, kin, Kp, Kv)
     elif controller_name == 'jointspace':
         # YOUR CODE HERE
-        Kp = np.array([0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1])
-        Kv = np.array([0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1])
+        Kp = np.array([1, 1, 1, 0.1, 0.3, 0.1, 0.2])
+        Kv = np.array([0.5, 0.5, 0.5, 0.1, 0.05, 0.1, 0.1])
         controller = PDJointVelocityController(limb, kin, Kp, Kv)
     elif controller_name == 'torque':
         # YOUR CODE HERE
-        Kp = np.array([0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1])
-        Kv = np.array([0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1])
+        Kp = np.array([40, 150, 80, 90, 85, 25, 50])
+        Kv = np.array([1, 1, 1, 0.4, 3, 3, 3])
         controller = PDJointTorqueController(limb, kin, Kp, Kv)
     elif controller_name == 'open_loop':
         controller = FeedforwardJointVelocityController(limb, kin)
